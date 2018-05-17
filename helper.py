@@ -1,6 +1,6 @@
-import Comunication.Comunicator
+import communicator
 
-ci = Comunication.Comunicator.Comunicatora()
+ci = communicator.Communicator()
 
 ci.send('1','1','1','1')
 print("good")
