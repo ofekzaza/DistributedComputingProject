@@ -1,9 +1,9 @@
 import communicator
+import BaseTypes.master
+import BaseTypes.worker
 
-com = communicator.Communicator(9999)
+master = BaseTypes.master.Master('master', -1, [], [])
 
-com.send('a','a','a','a')
+master.addWorker(0, 9999)
 
-type: str = -1
-
-print(com.waitRecive('a'))
+master.printWorkers()

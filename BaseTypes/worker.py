@@ -31,11 +31,11 @@ class Worker:
 
     def setWorker(self, option: int = 1): #option 1 is wait, 2 is dont wait, you can add more
         if option == 1:
-            self.curReciver, errorCheck, self.returnTarget, self.mission = self.com.waitRecive(self.name)
+            self.curReciver, errorCheck, self.returnTarget, self.mission = self.com.waitRecive(self.id)
             if errorCheck != self.name:
                 print('Worker number %s got the wrong input' % (str(self.id)))
         elif option == 2:
-            self.curReciver, errorCheck, self.returnTarget, self.mission = self.com.recive(self.name)
+            self.curReciver, errorCheck, self.returnTarget, self.mission = self.com.recive(self.id)
             if errorCheck != self.name:
                 print('Worker number %s got the wrong input' % (str(self.id)))
 

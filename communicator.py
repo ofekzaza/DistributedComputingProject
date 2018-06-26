@@ -15,7 +15,7 @@ class Communicator():
     def send(self, origin: str, target: str, returnTarget: str, msg: str,state: int = 2):
         # origin : who send the message
         # target : who receives the message
-        # returnTarget : who need to receive a message from target
+        # returnTarget : who need to receive a message from target, -1 is to the origin, -2 is not returning data
         # mission : what target needs to do
         # state : to which state machine target needs to change
         "the function is sending data "
