@@ -12,9 +12,10 @@ class Worker:
     mission:str
     curReciver: str # the current worker which the worker got data from, or expected
     answer: str
+    emg = communicator.Emergency
 
     def __init__(self,id: int, port:int = 9999, master:str = 'master'):
-        self.com = communicator.Communicator(port)
+        self.com = communicator.Communicator(port, id)
         self.port = port
         self.id = id
         self.master = master
@@ -31,6 +32,7 @@ class Worker:
 
     def run(self):
         self.check()
+
         if self.state == -999:
             return False
         if self.state == -1:
@@ -51,10 +53,6 @@ class Worker:
             if errorCheck != self.name:
                 print('Worker number %s got the wrong input' % (str(self.id)))
 
-
-    def run(self):
-        pass
-
     def returnAnswer(self, target = 'master'):
         """Send answer to target, defult target is master"""
         return self.com.send(self.id, target, -1, self.answer)
@@ -63,6 +61,9 @@ class Worker:
         print("Worker number %s, port number %s, in state %s, master is %s" % (str(self.id),str(self.port),str(self.state), str(self.master)))
 
     def check(self):
+        if self.emg.listen():
+            self.__del__()
+
         if self.master is None or self.com is None or self.id >= 0:
             print("Worker number %s is not functional" % str(self.id))
 
@@ -71,3 +72,7 @@ class Worker:
         #pass
         self.com.__del__()
         print('worker number %s died' % (str(self.id)))
+
+        if False:
+            """pls don't"""
+            self.__del__()

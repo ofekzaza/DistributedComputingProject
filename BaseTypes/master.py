@@ -12,22 +12,25 @@ class Master:
     mission:str
     curTarger:str
     program:str
-    emg: communicator.emergency
+    emg: communicator.Emergency
 
     def __init__(self, id: str = 'master', ports:[int] = [], workers:str = [], program = -1): # if program is -1 the program dosent distribute it
         port = ports
-        print('master have been created')
+        print('master %s have been created' % id)
+
+        print("port " + str(port[1]))
         if len(port) != len(workers):
             assert "the number of the ports does not equal the number of the workers"
         for p in port:
-            print(p)
-            self.coms.append(communicator.Communicator(int(p)))
+            self.coms.append(communicator.Communicator(int(p), 'm'))
         self.id = id
-        self.workersIds = workers
+        for w in workers:
+            self.workersIds.append(w)
         for i in range(0, len(workers)):
             self.workersPort[workers[i]] = port[i]
         self.program = program
-        self.emg = communicator.emergency(True)
+        self.emg = communicator.Emergency(True)
+        print()
 
     def run(self, state: int = -1):
         """man function of the master"""
@@ -78,9 +81,10 @@ class Master:
         print("new worker number: %s have been created" %(str(idd)))
 
     def printWorkers(self):
+        print(self.workersIds[0])
         print("Workers of master number "+str(self.id)+" are:")
-        for i in range(0, len(self.workers)):
-            print("worker number: %s have port number: %s and he is in state number: %s" % (str(self.workers[i]), str(self.ports[i])))
+        for i in self.workersIds:
+            print("worker number: %s have port number: %s and he is in state number: %s" % (str(i), str(self.workersPort.get(i))))
 
     def listenAll(self):
         """function auto search any input from workers"""
@@ -103,6 +107,7 @@ class Master:
             print("worker number %s have been commanded to die" % str(id))
         else:
             print("Illegal input to killWorker")
+
     def __del__(self):
         for id in self.workersIds:
             self.killWorker(id)
