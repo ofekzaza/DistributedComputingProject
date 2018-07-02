@@ -13,12 +13,14 @@ class Master:
     curTarger:str
     program:str
     emg: communicator.Emergency
+    workersState = {}
+    listenTarget: int
+    emg = communicator.Emergency(True)
+
 
     def __init__(self, id: str = 'master', ports:[int] = [], workers:str = [], program = -1): # if program is -1 the program dosent distribute it
         port = ports
         print('master %s have been created' % id)
-
-        print("port " + str(port[1]))
         if len(port) != len(workers):
             assert "the number of the ports does not equal the number of the workers"
         for p in port:
@@ -27,20 +29,21 @@ class Master:
         for w in workers:
             self.workersIds.append(w)
         for i in range(0, len(workers)):
-            self.workersPort[workers[i]] = port[i]
+            self.workersPort[self.workersIds[i]] = port[i]
+            self.workersState[self.workersIds[i]] = 1
         self.program = program
-        self.emg = communicator.Emergency(True)
-        print()
+        self.run()
 
     def run(self, state: int = -1):
         """man function of the master"""
         if state == -1:
             state = self.state
-
         if state == 1:
             self.setMaster()
         if state == 2:
             self.setWorkers()
+        if state == 3:
+            self.listen()
         return True
 
     def setMaster(self, option: int = 1): #option 1 is wait, 2 is dont wait, you can add more
@@ -58,6 +61,7 @@ class Master:
         """set all the workers in the list"""
         for i in range(0, len(self.workers)):
             self.coms[i].send(self.name, self.workersIds[i], -1, self.workersMission[i])
+        self.state = 3
 
     def setProgram(self):#dosent works it
         """dosent work yet"""
@@ -81,10 +85,10 @@ class Master:
         print("new worker number: %s have been created" %(str(idd)))
 
     def printWorkers(self):
-        print(self.workersIds[0])
         print("Workers of master number "+str(self.id)+" are:")
         for i in self.workersIds:
-            print("worker number: %s have port number: %s and he is in state number: %s" % (str(i), str(self.workersPort.get(i))))
+            print("worker number '%s' have port number '%s'" % (str(i), str(self.workersPort[i])))
+        print("")
 
     def listenAll(self):
         """function auto search any input from workers"""
@@ -95,21 +99,26 @@ class Master:
             i += 1
         return  returnValue[0], returnValue[1], returnValue[2], returnValue[3]
 
-    def listen(self, port):
+    def listenPort(self, port):
         return self.coms[self.ports.index(port)]
 
-    def run(self):
-        pass
+    def listen(self):
+        return self.coms[self.workersIds.index(self.listenTarget)]
 
     def killWorker(self, id):
         if id in self.workersIds:
-            self.emg.kill(id)
+            self.coms[self.workersIds.index(id)].kill(id)
             print("worker number %s have been commanded to die" % str(id))
         else:
             print("Illegal input to killWorker")
 
+    def setStage(self, stage):
+        self.state = stage
+        print("master stage have been changed")
+
     def __del__(self):
         for id in self.workersIds:
             self.killWorker(id)
+        self.emg.__del__()
         print('master have died number %s died' % (str(self.id)))
 

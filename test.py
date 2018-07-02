@@ -3,13 +3,11 @@ import BaseTypes.master
 import BaseTypes.worker
 import socket
 import time
+import search.master
 #work = BaseTypes.worker.Worker(1,1,1)
 
 #work.printWorker()
 
-
-
-c = communicator.Communicator(10000, 'c')
 ids = []
 workers: [BaseTypes.worker.Worker] = []
 ports = []
@@ -21,6 +19,10 @@ for i in range(0, 10):
     ids.append(i)
     ports.append(9999-i)
 
-master = BaseTypes.master.Master('master', ids, ports)
+master = search.master.Master('master', ports, ids)
+
+master.printWorkers()
+
+master.addWorker(10,10000)
 
 master.printWorkers()

@@ -5,7 +5,9 @@ class Communicator():
     s:socket
     port:int
     name: str = ""
-    def __init__(self, p, name = None, prnt = False):
+    user = "master"
+
+    def __init__(self, p, name = None, prnt = False, user = "master"):
         if name is not None:
             self.name = name
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # creating the socket
@@ -19,6 +21,7 @@ class Communicator():
             print("port "+str(port))
         self.s.bind(('', int(port)))
         self.port = port
+        self.user = user
 
     def send(self, origin: str, target: str, returnTarget: str, msg: str,state: int = 1)-> [str]: #str *5
         # origin : who send the message
@@ -42,6 +45,8 @@ class Communicator():
                     time.sleep(0.000000001)
                     print("Port number: '%s' which listen by listener: '%s' read echo ,Rereading listening." % (self.port, listener))
                     return self.receive(listener, times+1)
+                elif self.checkChange(data):
+                    return self.port
                 print("Port number: '%s' which listen by listener: '%s' got this message: '%s' ,Rereading listening." % (self.port, listener, data))
                 time.sleep(0.000000001)
                 return self.receive(listener, times + 1)
@@ -77,6 +82,8 @@ class Communicator():
         """listener is waiting for a broadcast for him, don't use times - valuable exist to serve the function"""
         data = None
         while data is None and ("Target:"+listener) in str(data):
+            if self.checkChange(data):
+                return self.port
             data, address = self.s.recvfrom(1024)
             time.sleep(0.0000000001)
 
@@ -135,6 +142,53 @@ class Communicator():
             return True
         raise ValueError("Illegal Echo values")
 
+    def kill(self, who):
+        """Order the death of a worker"""
+        if self.user == 'worker':
+            print("worker can't kill other workers")
+            return False
+        self.s.sendto(("KILL"+str(who)).encode(), ('<broadcast>', self.port))
+        return True
+
+    def setPort(self, port):
+        """Does not recommended to do"""
+        self.s.sendto(("ChangeNewPort"+str(port)).encode(), ('<broadcast>', self.port))
+        print("Communication port have changed from "+self.port+"  to "+port)
+        self.port = port
+        return True
+
+    def checkChange(self, data:str):
+        if "ChangeNewPort" in data:
+            port = data.split("ChangeNewPort")[0]
+            if port > pow(2, 16) - 1 or port < 0:
+                print('mate, are you retard? you gave false port')
+                return False
+                port = 9999
+            self.s.close()
+            self.s = None
+            self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # creating the socket
+            self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # added in order to fix the bug the may accure
+            self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            self.s.bind(('', int(port)))
+            self.port = port
+            return True
+
+    def listen(self, who):
+        """function for workers to check if they suppose to die"""
+        if self.user == 'master':
+            print('master doesnt suppose to listen to emergency')
+        data = self.s.recvfrom(1024)
+        data = str(data)
+        if  "KILL"+str(who in data):
+            self.deathEcho(who)
+            return True
+        return False
+
+    def deathEcho(self, who):
+        """before death worker send an Echo to say that he will be Dead"""
+        self.s.sendto(("TheSoundOfSilenceIsLikeTheSoundOfWorker"+str(who)).encode(), ('<broadcast>', self.port))
+        return True
+
     def __del__(self):
         self.s.close()
         print('Communicator %s died, RIP' % self.name)
@@ -154,35 +208,8 @@ class Emergency:
             self.user = 'worker'
         self.s.bind(('', self.port))
 
-    def kill(self, who):
-        """Order the death of a worker"""
-        if self.user == 'worker':
-            print("worker can't kill other workers")
-            return False
-        self.s.sendto(("KILL"+str(who)).encode(), ('<broadcast>', self.port))
-        return True
 
-    def setPort(self, port):
-        """Does not recommended to do"""
-        print("Emergency port from "+self.port+" have been changed to "+port)
-        self.port = port
-        return True
-
-    def listen(self, who):
-        """function for workers to check if they suppose to die"""
-        if self.user == 'master':
-            print('master doesnt suppose to listen to emergency')
-        data = self.s.recvfrom(1024)
-        data = str(data)
-        if  "KILL"+str(who in data):
-            self.deathEcho(who)
-            return True
-        return False
-
-    def deathEcho(self, who):
-        """before death worker send an Echo to say that he will be Dead"""
-        self.s.sendto(("TheSoundOfSilenceIsLikeTheSoundOfWorker"+str(who)).encode(), ('<broadcast>', self.port))
-        return True
 
     def __del__(self):
-        print("Emergency port %s serving %s DIED, RIP" %(self.port, self.user))
+        self.s.close()
+        print("Emergency port %s serving %s DIED, RIP" % (self.port, self.user))

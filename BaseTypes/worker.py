@@ -12,15 +12,15 @@ class Worker:
     mission:str
     curReciver: str # the current worker which the worker got data from, or expected
     answer: str
-    emg = communicator.Emergency
+    emg:communicator.Emergency
 
     def __init__(self,id: int, port:int = 9999, master:str = 'master'):
-        self.com = communicator.Communicator(port, id)
+        self.com = communicator.Communicator(port, id, "worker")
         self.port = port
         self.id = id
         self.master = master
         self.curReciver = master
-
+        self.run()
 
     def setState(self, state:int): # state -999 is dosent work and -1 is defult at start
         if state < -999:
