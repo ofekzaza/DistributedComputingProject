@@ -5,9 +5,9 @@ class Communicator():
     s:socket
     port:int
     name: str = ""
-    user = "master"
+    user:str
 
-    def __init__(self, p, name = None, prnt = False, user = "master"):
+    def __init__(self, p, name = None,  user = "master"):
         if name is not None:
             self.name = name
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # creating the socket
@@ -17,8 +17,6 @@ class Communicator():
         if port > pow(2,16)-1 or port < 0:
             print('mate, are you retard? you gave false port, THE NEW PORT IS 9999')
             port = 9999
-        if(prnt):
-            print("port "+str(port))
         self.s.bind(('', int(port)))
         self.port = port
         self.user = user
@@ -37,20 +35,25 @@ class Communicator():
     def receive(self, listener: str, times: int = 1)-> [str]: #str * 5
         """dont use times"""
         """function is responsible of reciving data from a broadcast"""
+        if listener is None:
+            return False
         data, address = self.s.recvfrom(1024)
         data = str(data, 'utf-8')
-        if ("Target:"+listener) not in data:
+        if (str("Target:"+str(listener))) not in data:
             if times == 1:
                 if self.kindOfEcho(data, listener) is not None:
                     time.sleep(0.000000001)
-                    print("Port number: '%s' which listen by listener: '%s' read echo ,Rereading listening." % (self.port, listener))
+                    print("Port number: '%s' which listen by listener: '%s' read echo ,Rereading. read an echo" % (self.port, listener))
                     return self.receive(listener, times+1)
                 elif self.checkChange(data):
-                    return self.port
-                print("Port number: '%s' which listen by listener: '%s' got this message: '%s' ,Rereading listening." % (self.port, listener, data))
+                    return self.port, self.port, self.port, self.port, self.port
+                if (str("Origin:"+listener)) in data:
+                    print("%s read its own message, lol" % str(listener))
+                    return None, None, None, None, None
+                print("Port number: '%s' which listen by listener: '%s' got this message: '%s'. Rereading, why: gen" % (self.port, listener, data))
                 time.sleep(0.000000001)
                 return self.receive(listener, times + 1)
-            return -1
+            return None, None, None, None, None
 
         help = data.split("Origin:")
         helper = help[1].split(",Target:")
@@ -58,7 +61,7 @@ class Communicator():
         help = helper[1].split(",ReturnTo:")
         target = help[0]
 
-        if target != listener: # Listener is not target
+        if str(target) != str(listener): # Listener is not target
             self.s.sendto(("Communication Error which send by %s to %s" %(origin, listener)).encode('ascii'), ('<broadcast>', self.port))#Echo
             raise ValueError("Error, communication read wrong message")
 
@@ -78,32 +81,36 @@ class Communicator():
         # mission : what target needs to do
         # state : to which state machine target needs to change
 
-    def waitReceive(self, listener: str, times: int = 1) -> [str]: #str * 5
+    def waitReceive(self, listener) -> [str]: #str * 5
         """listener is waiting for a broadcast for him, don't use times - valuable exist to serve the function"""
         data = None
-        while data is None and ("Target:"+listener) in str(data):
-            if self.checkChange(data):
-                return self.port
+        d:str
+        while str("Target:"+str(listener)) not in str(data):
+            if data is not None:
+                print(str(data))
+                d = str(data, 'utf-8')
+                if self.checkChange(d):
+                    return self.port, self.port, self.port, self.port, self.port
             data, address = self.s.recvfrom(1024)
             time.sleep(0.0000000001)
-
         data = str(data, 'utf-8')
 
-        helps = data.split("Origin:")
-        helper = helps[1].split(",Target:")
+        #print(data)
+        help = data.split("Origin:")
+        helper = help[1].split(",Target:")
         origin = helper[0]
-        helps = helper[1].split(",ReturnTo:")
-        target = helps[0]
-
-        if target != listener: # Listener is not target
-            self.s.sendto(("Communication Error which send by %s to %s" %(origin, listener)).encode('ascii'), ('<broadcast>', self.port))#Echo
+        help = helper[1].split(",ReturnTo:")
+        target = help[0]
+        if str(target) != str(listener):  # Listener is not target
+            self.s.sendto(("Communication Error which send by %s to %s" % (origin, listener)).encode('ascii'),
+                          ('<broadcast>', self.port))  # Echo
             raise ValueError("Error, communication read wrong message")
 
-        helper = helps[1].split(",Mission:")
+        helper = help[1].split(",Mission:")
         returnTarget = helper[0]
-        helps = helper.split(",State:")
-        mission = helps[0]
-        state = helps[1]
+        help = helper[1].split(",State:")
+        mission = help[0]
+        state = help[1]
 
         """echo"""
         self.sendEcho(origin, listener)
@@ -119,6 +126,7 @@ class Communicator():
         return "communicator port "+str(self.port)
 
     def readEcho(self, target) -> bool:
+        """chreck if communicator read an echo from target"""
         data = self.s.recvfrom(1024)
         if data is not None:
             if (",from:%s" %(target)) in str(data) and "Thanks:" in str(data):
@@ -151,14 +159,15 @@ class Communicator():
         return True
 
     def setPort(self, port):
-        """Does not recommended to do"""
+        """Does not recommended to do, change the port of the communication"""
         self.s.sendto(("ChangeNewPort"+str(port)).encode(), ('<broadcast>', self.port))
         print("Communication port have changed from "+self.port+"  to "+port)
         self.port = port
         return True
 
     def checkChange(self, data:str):
-        if "ChangeNewPort" in data:
+        """check if data say to the communicator to change it current port"""
+        if data is not None and "ChangeNewPort" in data:
             port = data.split("ChangeNewPort")[0]
             if port > pow(2, 16) - 1 or port < 0:
                 print('mate, are you retard? you gave false port')
@@ -175,11 +184,9 @@ class Communicator():
 
     def listen(self, who):
         """function for workers to check if they suppose to die"""
-        if self.user == 'master':
-            print('master doesnt suppose to listen to emergency')
         data = self.s.recvfrom(1024)
         data = str(data)
-        if  "KILL"+str(who in data):
+        if  str("KILL"+str(who)) in data:
             self.deathEcho(who)
             return True
         return False
@@ -192,24 +199,3 @@ class Communicator():
     def __del__(self):
         self.s.close()
         print('Communicator %s died, RIP' % self.name)
-
-
-class Emergency:
-    port = 6666 #dont use this port
-
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # creating the socket
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # added in order to fix the bug the may accure
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
-    user = 'master'
-
-    def __init__(self, isMaster: bool):
-        if not isMaster :
-            self.user = 'worker'
-        self.s.bind(('', self.port))
-
-
-
-    def __del__(self):
-        self.s.close()
-        print("Emergency port %s serving %s DIED, RIP" % (self.port, self.user))

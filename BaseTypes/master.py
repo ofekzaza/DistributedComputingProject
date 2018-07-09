@@ -1,10 +1,10 @@
 import communicator
 
 class Master:
-    coms: [communicator.Communicator] = []
+    coms: [communicator.Communicator]
     workersIds = []
     workersPort = {}
-    workersMission = {}
+    workersMission = []
     id: int = 'master'
     typ: str = "worker"
     state: int = 1 #state machine: 1 - getting information, 2 - proccesing and sending results
@@ -12,17 +12,18 @@ class Master:
     mission:str
     curTarger:str
     program:str
-    emg: communicator.Emergency
     workersState = {}
     listenTarget: int
-    emg = communicator.Emergency(True)
+    answer:str
 
 
-    def __init__(self, id: str = 'master', ports:[int] = [], workers:str = [], program = -1): # if program is -1 the program dosent distribute it
+    def __init__(self, ports:[int] = [], workers:str = [], program = -1, id: str = "master"): # if program is -1 the program dosent distribute it
         port = ports
         print('master %s have been created' % id)
+        print("")
+        self.coms = []
         if len(port) != len(workers):
-            assert "the number of the ports does not equal the number of the workers"
+            raise ValueError("the number of the ports does not equal the number of the workers")
         for p in port:
             self.coms.append(communicator.Communicator(int(p), 'm'))
         self.id = id
@@ -32,20 +33,20 @@ class Master:
             self.workersPort[self.workersIds[i]] = port[i]
             self.workersState[self.workersIds[i]] = 1
         self.program = program
-        self.run()
+        self.setMissions()
+        #self.run()
 
     def run(self, state: int = -1):
         """man function of the master"""
         if state == -1:
             state = self.state
         if state == 1:
-            self.setMaster()
-        if state == 2:
             self.setWorkers()
         if state == 3:
             self.listen()
         return True
 
+    """
     def setMaster(self, option: int = 1): #option 1 is wait, 2 is dont wait, you can add more
         "gives the master the base program from an outside code"
         if option == 1:
@@ -56,12 +57,26 @@ class Master:
             self.curReciver, errorCheck, self.returnTarget, self.mission = self.com.recive(self.id)
             if errorCheck != self.name:
                 print('Worker number %s got the wrong input' % (str(self.id)))
+    """
+
+    def setMissions(self):
+        pass
 
     def setWorkers(self):
+        if len(self.coms) != len(self.workersIds) or len(self.coms) != len(self.workersMission):
+            print("WTFucking fuck in the fuck")
+            print("WTFucking fuck in the fuck")
+            print("WTFucking fuck in the fuck")
+            print(len(self.workersMission))
+            print(len(self.workersIds))
+            print("WTFucking fuck in the fuck")
+            print("WTFucking fuck in the fuck")
+            print("WTFucking fuck in the fuck")
+
         """set all the workers in the list"""
-        for i in range(0, len(self.workers)):
-            self.coms[i].send(self.name, self.workersIds[i], -1, self.workersMission[i])
-        self.state = 3
+        for i in range(0, len(self.workersIds)):
+            self.coms[i].send(self.id, self.workersIds[i], -1, self.workersMission[i])
+        print("message for workers have been sended!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
     def setProgram(self):#dosent works it
         """dosent work yet"""
@@ -119,6 +134,5 @@ class Master:
     def __del__(self):
         for id in self.workersIds:
             self.killWorker(id)
-        self.emg.__del__()
         print('master have died number %s died' % (str(self.id)))
 

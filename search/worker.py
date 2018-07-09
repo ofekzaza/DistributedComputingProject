@@ -3,8 +3,14 @@ import BaseTypes.worker
 class Worker (BaseTypes.worker.Worker):
 
 
-    def run(self):
-        self.check()
+    def run(self, state = -1):
+        print('a')
+        if state == -1:
+            state = self.state
+        self.state = state
+
+        print("worker number "+ str(self.id)+"is working?!?!??!?!?")
+
         if self.state == -999:
             return False
 
@@ -14,28 +20,39 @@ class Worker (BaseTypes.worker.Worker):
 
         if self.state == 1:
             self.startWorker()
+            self.state = 2
 
         if self.state == 2:
-            self.send(self.id, self.master, -1, self.search())
+            self.answer = self.search()
+            self.com.send(self.id, self.master, -1, self.answer)
+            #self.check()
+            print(("message is %s,%s,%s,%s")%(self.id, self.master, -1, self.search()))
+            return self.answer
+        return self.run()
 
-        return True
-
-    def search(self):
+    def search(self, file = -999):
         """serach target in file"""
-        helper = self.mission.split("...")
-        file = open(str(helper[0]), 'r')
-        target = str(helper[1])
+
+        print("search")
+
+        if file == -999:
+            file = str(str(self.id)+".txt")
+        file = open(str(file), 'r')
+        target = str(self.mission)
 
         counter = 0 # the number of times which target appeared in file
 
         l = len(target)
 
         read = file.read(l)
-        n = read[1]
+
+        n = read[l-1]
         while n is not '':
-            if read  == target:
+            if str(read)  == str(target):
                 counter += 1
-            n = file.read(1)
-            read = str(read[:1] + n)
-        return counter
+            n = file.read(l)
+            read = str(read[:0] + n)
+        print("worker number %s have answer which is %s" % (self.id, counter))
+        return str(counter)
+
 

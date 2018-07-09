@@ -3,26 +3,32 @@ import BaseTypes.master
 import BaseTypes.worker
 import socket
 import time
+import search.worker
 import search.master
-#work = BaseTypes.worker.Worker(1,1,1)
+import _thread
 
-#work.printWorker()
+import search.master
 
-ids = []
-workers: [BaseTypes.worker.Worker] = []
 ports = []
-com = []
+ids = []
+
+for x in range(1):
+    ports.append(9999-x)
+    ids.append(x)
+
+w1 = search.worker.Worker(0,9999)
+
+master = search.master.Master(ports, ids, 'a')
 
 
-for i in range(0, 10):
-    workers.append(BaseTypes.worker.Worker(i, 9999-i))
-    ids.append(i)
-    ports.append(9999-i)
+_thread.start_new_thread(master.run, ())
 
-master = search.master.Master('master', ports, ids)
+print("hello")
 
-master.printWorkers()
+w1.run()
 
-master.addWorker(10,10000)
 
-master.printWorkers()
+"""
+_thread.start_new_thread(master.run(), ())
+
+_thread.start_new_thread(w1.run(), ())"""
